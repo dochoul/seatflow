@@ -1,0 +1,15 @@
+node_modules/
+dist/
+build/
+.venv/
+__pycache__/
+*.pyc
+*.db
+*.db-shm
+*.db-wal
+*.db-journal
+*.spec
+config.json
+.env
+.DS_Store
+.omc/
