@@ -39,6 +39,15 @@ export const STATUS_LABELS: Record<SeatStatus, string> = {
   empty: "공석",
 };
 
+export interface WorkHours {
+  employeeId: string;
+  date: string;
+  workMinutes: number;
+  workHours: string;
+  targetMinutes: number;
+  details: { from: string; to: string; status: string; minutes: number }[];
+}
+
 export const STATUS_COLORS: Record<SeatStatus, string> = {
   occupied: "#2ecc71",
   away: "#f39c12",

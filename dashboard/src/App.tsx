@@ -3,6 +3,7 @@ import Dashboard from "./components/Dashboard";
 import SeatMap from "./components/SeatMap";
 import PeopleList from "./components/PeopleList";
 import ActivityLog from "./components/ActivityLog";
+import WorkHours from "./components/WorkHours";
 
 export default function App() {
   const { seats, connected } = useWebSocket();
@@ -40,6 +41,15 @@ export default function App() {
             <h2 className="mb-3 text-lg font-semibold text-gray-700">활동 로그</h2>
             <ActivityLog />
           </div>
+        </div>
+
+        {/* 근무시간 현황 */}
+        <div className="rounded-xl border bg-white p-5 shadow-sm">
+          <h2 className="mb-4 text-lg font-semibold text-gray-700">
+            오늘의 근무시간
+            <span className="ml-2 text-sm font-normal text-gray-400">(목표: 8시간, 점심 12~1시 제외)</span>
+          </h2>
+          <WorkHours seats={seats} />
         </div>
 
         {/* 재직 현황 테이블 */}

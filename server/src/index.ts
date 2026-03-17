@@ -4,6 +4,7 @@ import http from "http";
 import path from "path";
 import statusRouter from "./routes/status";
 import seatsRouter from "./routes/seats";
+import workHoursRouter from "./routes/work-hours";
 import { setupWebSocket } from "./websocket";
 import db from "./db";
 
@@ -16,6 +17,7 @@ app.use(express.json());
 // REST API
 app.use("/api/status", statusRouter);
 app.use("/api/seats", seatsRouter);
+app.use("/api/work-hours", workHoursRouter);
 
 // GET /api/activity — 최근 활동 로그
 app.get("/api/activity", (req, res) => {
