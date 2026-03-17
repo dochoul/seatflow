@@ -1,6 +1,7 @@
 import express from "express";
 import cors from "cors";
 import http from "http";
+import path from "path";
 import statusRouter from "./routes/status";
 import seatsRouter from "./routes/seats";
 import { setupWebSocket } from "./websocket";
@@ -32,6 +33,13 @@ app.get("/api/activity", (req, res) => {
     .all(limit);
 
   res.json(logs);
+});
+
+// 프로덕션: 대시보드 정적 파일 서빙
+const dashboardPath = path.join(__dirname, "..", "..", "dashboard", "dist");
+app.use(express.static(dashboardPath));
+app.get("*", (_req, res) => {
+  res.sendFile(path.join(dashboardPath, "index.html"));
 });
 
 // HTTP + WebSocket 서버

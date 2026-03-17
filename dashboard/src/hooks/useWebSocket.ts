@@ -6,7 +6,10 @@ interface UseWebSocketReturn {
   connected: boolean;
 }
 
-const WS_URL = `ws://${window.location.hostname}:3000`;
+// 프로덕션: 같은 호스트, 개발: localhost:3000
+const WS_URL = window.location.hostname === "localhost"
+  ? `ws://localhost:3000`
+  : `wss://${window.location.host}`;
 
 export function useWebSocket(): UseWebSocketReturn {
   const [seats, setSeats] = useState<Seat[]>([]);
