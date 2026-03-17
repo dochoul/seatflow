@@ -15,7 +15,7 @@ export function useWebSocket(): UseWebSocketReturn {
   const [seats, setSeats] = useState<Seat[]>([]);
   const [connected, setConnected] = useState(false);
   const wsRef = useRef<WebSocket | null>(null);
-  const reconnectTimer = useRef<ReturnType<typeof setTimeout>>();
+  const reconnectTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
 
   // REST fallback: WebSocket 연결 전에도 데이터 표시
   useEffect(() => {
