@@ -12,8 +12,8 @@ db.exec(`
 const employees = [
   { id: "emp-001", name: "David", dept: "개발팀", seatId: "A-01" },
   { id: "emp-002", name: "Gilbert", dept: "개발팀", seatId: "A-02" },
-  { id: "emp-003", name: "박지훈", dept: "개발팀", seatId: "A-03" },
-  { id: "emp-004", name: "최유진", dept: "개발팀", seatId: "A-04" },
+  { id: "emp-003", name: "Chang", dept: "개발팀", seatId: "A-03" },
+  { id: "emp-004", name: "Victoria", dept: "개발팀", seatId: "A-04" },
   { id: "emp-005", name: "정도현", dept: "개발팀", seatId: "A-05" },
   { id: "emp-006", name: "강하늘", dept: "기획팀", seatId: "B-01" },
   { id: "emp-007", name: "윤서준", dept: "기획팀", seatId: "B-02" },
