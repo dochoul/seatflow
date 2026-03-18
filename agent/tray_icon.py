@@ -1,7 +1,6 @@
 import threading
-from typing import Optional
-from PIL import Image, ImageDraw
-import pystray
+
+import rumps
 
 import api_client
 
@@ -14,98 +13,96 @@ STATUSES = [
     ("wfh", "재택근무"),
 ]
 
-STATUS_COLORS = {
-    "occupied": "#2ecc71",
-    "away": "#f39c12",
-    "meeting": "#2196f3",
-    "out": "#e74c3c",
-    "wfh": "#9b59b6",
+STATUS_EMOJI = {
+    "occupied": "🟢",
+    "away": "🟡",
+    "meeting": "🔵",
+    "out": "🔴",
+    "wfh": "🟣",
 }
 
-_icon: Optional[pystray.Icon] = None
+_app = None
 _current_status = "occupied"
 _on_quit = None
+_on_ready = None
 
 
-def _make_icon_image(color: str) -> Image.Image:
-    """상태 색상의 원형 아이콘 생성"""
-    size = 64
-    img = Image.new("RGBA", (size, size), (0, 0, 0, 0))
-    draw = ImageDraw.Draw(img)
-    draw.ellipse([4, 4, size - 4, size - 4], fill=color)
-    return img
+class SeatFlowApp(rumps.App):
+    def __init__(self):
+        super().__init__("SeatFlow", title=STATUS_EMOJI["occupied"], quit_button=None)
+        self._build_menu()
+
+    def _build_menu(self):
+        self.menu.clear()
+        for status_key, label in STATUSES:
+            marker = "● " if status_key == _current_status else "○ "
+            item = rumps.MenuItem(marker + label, callback=self._make_callback(status_key))
+            self.menu.add(item)
+        self.menu.add(rumps.separator)
+        self.menu.add(rumps.MenuItem("종료", callback=self._quit))
+
+    def _make_callback(self, status_key):
+        def callback(_):
+            _set_status(status_key)
+        return callback
+
+    def _quit(self, _):
+        api_client.send_status("empty", "agent")
+        if _on_quit:
+            _on_quit()
+        rumps.quit_application()
+
+    def update_display(self):
+        """현재 상태에 맞게 메뉴바 아이콘과 메뉴 갱신"""
+        self.title = STATUS_EMOJI.get(_current_status, "⚪")
+        self._build_menu()
 
 
-def _set_status(status: str):
+@rumps.notifications
+def _notification_handler(info):
+    pass
+
+
+def _set_status(status):
     """상태 변경 → 아이콘 업데이트 + 서버 전송"""
     global _current_status
     if status == _current_status:
         return
     prev = _current_status
     _current_status = status
+
+    # UI 먼저 즉시 업데이트
+    if _app:
+        _app.update_display()
+
+    # 서버 전송은 백그라운드에서 (메인 스레드 블로킹 방지)
     source = "agent" if status in ("occupied", "away") else "manual"
-    ok = api_client.send_status(status, source)
-    print(f"[SeatFlow] 상태 변경: {prev} → {status} (전송: {'OK' if ok else 'FAIL'})")
-    _update_icon()
+    def send():
+        ok = api_client.send_status(status, source)
+        print(f"[SeatFlow] 상태 변경: {prev} → {status} (전송: {'OK' if ok else 'FAIL'})")
+    threading.Thread(target=send, daemon=True).start()
 
 
-def _update_icon():
-    """현재 상태에 맞게 아이콘과 메뉴 갱신"""
-    if _icon is None:
-        return
-    color = STATUS_COLORS.get(_current_status, "#808080")
-    _icon.icon = _make_icon_image(color)
-    _icon.menu = _build_menu()
-
-
-def _make_callback(status_key: str):
-    """클로저로 콜백 생성 (Mac pystray 호환)"""
-    def callback(icon, item):
-        _set_status(status_key)
-    return callback
-
-
-def _build_menu() -> pystray.Menu:
-    items = []
-    for status_key, label in STATUSES:
-        marker = "● " if status_key == _current_status else "○ "
-        items.append(
-            pystray.MenuItem(marker + label, _make_callback(status_key))
-        )
-    items.append(pystray.Menu.SEPARATOR)
-    items.append(pystray.MenuItem("종료", _quit))
-    return pystray.Menu(*items)
-
-
-def _quit(icon, _item=None):
-    global _icon
-    api_client.send_status("empty", "agent")  # 종료 시 오프라인 전송
-    icon.stop()
-    _icon = None
-    if _on_quit:
-        _on_quit()
-
-
-def get_current_status() -> str:
+def get_current_status():
     return _current_status
 
 
-def set_status_from_agent(status: str):
+def set_status_from_agent(status):
     """에이전트(idle 감지)에서 호출. 수동 상태는 건드리지 않음."""
     if _current_status in ("meeting", "out", "wfh"):
-        return  # 수동 설정된 상태는 자동 변경하지 않음
+        return
     _set_status(status)
 
 
-def run(on_quit=None):
+def run(on_quit=None, on_ready=None):
     """트레이 아이콘 실행 (메인 스레드에서 호출)"""
-    global _icon, _on_quit
+    global _app, _on_quit, _on_ready
     _on_quit = on_quit
-    color = STATUS_COLORS[_current_status]
-    _icon = pystray.Icon(
-        "SeatFlow",
-        _make_icon_image(color),
-        "SeatFlow",
-        _build_menu(),
-    )
-    _icon.run()
+    _on_ready = on_ready
+    _app = SeatFlowApp()
+
+    if on_ready:
+        import threading
+        threading.Timer(0.5, on_ready).start()
+
+    _app.run()

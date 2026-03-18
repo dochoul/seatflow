@@ -64,27 +64,29 @@ def heartbeat_loop(stop_event: threading.Event):
 def main():
     setup()
 
-    # 서버에 초기 착석 상태 전송
-    api_client.send_status("occupied", "agent")
-
     stop_event = threading.Event()
 
     def on_quit():
         stop_event.set()
 
-    # idle 감지 스레드
-    idle_thread = threading.Thread(target=idle_check_loop, args=(stop_event,), daemon=True)
-    idle_thread.start()
+    # 서버 전송 및 백그라운드 스레드는 트레이 아이콘 setup 콜백에서 시작
+    def on_tray_ready():
+        # 서버에 초기 착석 상태 전송 (백그라운드)
+        threading.Thread(
+            target=api_client.send_status, args=("occupied", "agent"), daemon=True
+        ).start()
 
-    # heartbeat 스레드
-    hb_thread = threading.Thread(target=heartbeat_loop, args=(stop_event,), daemon=True)
-    hb_thread.start()
+        # idle 감지 스레드
+        threading.Thread(target=idle_check_loop, args=(stop_event,), daemon=True).start()
 
-    print(f"[SeatFlow] 에이전트 시작 ({config.EMPLOYEE_ID} / {config.SEAT_ID})")
-    print(f"[SeatFlow] idle 임계값: {config.IDLE_THRESHOLD}초, 체크 주기: {config.CHECK_INTERVAL}초")
+        # heartbeat 스레드
+        threading.Thread(target=heartbeat_loop, args=(stop_event,), daemon=True).start()
+
+        print(f"[SeatFlow] 에이전트 시작 ({config.EMPLOYEE_ID} / {config.SEAT_ID})")
+        print(f"[SeatFlow] idle 임계값: {config.IDLE_THRESHOLD}초, 체크 주기: {config.CHECK_INTERVAL}초")
 
     # 트레이 아이콘 실행 (메인 스레드, 블로킹)
-    tray_icon.run(on_quit=on_quit)
+    tray_icon.run(on_quit=on_quit, on_ready=on_tray_ready)
 
     print("[SeatFlow] 에이전트 종료")
 

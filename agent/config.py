@@ -1,7 +1,15 @@
 import json
 import os
 
-CONFIG_PATH = os.path.join(os.path.dirname(__file__), "config.json")
+def _get_config_path():
+    """PyInstaller 번들 여부와 무관하게 앱 지원 디렉토리에 저장"""
+    support_dir = os.path.join(
+        os.path.expanduser("~"), "Library", "Application Support", "SeatFlow"
+    )
+    os.makedirs(support_dir, exist_ok=True)
+    return os.path.join(support_dir, "config.json")
+
+CONFIG_PATH = _get_config_path()
 
 # 기본값
 SERVER_URL = "http://localhost:3000"
